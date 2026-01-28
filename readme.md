@@ -62,6 +62,9 @@ The example app serves as a simple online shopping application that highlights t
 2. **Create Order**: Within the app, you can initiate the order creation process.
 3. **Check Payment Status**: Retrieve and display the payment status after the transaction.
 
+## Changelog
+All notable changes are documented in [CHANGELOG.md](CHANGELOG.md).
+
 ### Initialize
 ---
 
