@@ -54,6 +54,10 @@ Make sure your project minimum sdk level is **26**. Taly SDK supports the Androi
 4. Sync Gradle:
    * After adding the dependency, sync your project with Gradle.
 
+## Changelog
+
+All notable changes are documented in [CHANGELOG.md](CHANGELOG.md).
+
 ## Usage
 
 The example app serves as a simple online shopping application that highlights the integration of the Taly SDK for payment processing. The workflow is as follows:
@@ -61,9 +65,6 @@ The example app serves as a simple online shopping application that highlights t
 1. **Initialize**: Start by initializing the necessary components within the app.
 2. **Create Order**: Within the app, you can initiate the order creation process.
 3. **Check Payment Status**: Retrieve and display the payment status after the transaction.
-
-## Changelog
-All notable changes are documented in [CHANGELOG.md](CHANGELOG.md).
 
 ### Initialize
 ---
