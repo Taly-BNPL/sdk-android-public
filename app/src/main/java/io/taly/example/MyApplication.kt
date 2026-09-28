@@ -16,8 +16,8 @@ class MyApplication : Application() {
         // Initialize Taly SDK
         TalySdk.initialize(
             context = applicationContext,
-            userName = "DemoMerchant#153",
-            password = "Dem@Merch@nt#2023",
+            userName = "YOUR_USER_NAME",
+            password = "YOUR_PASSWORD",
             environment = Environment.Development
         )
         // set log level for debugging.
