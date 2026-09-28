@@ -81,8 +81,8 @@ class MainActivity : AppCompatActivity(), BannerView.OnInfoClick {
 
         if (TextUtils.isEmpty(amount)) {
             binding.amountTextInputLayout.error = "Amount is Empty"
-        } else if (amount.toFloat() <= 0 || amount.toFloat() > 5) binding.amountTextInputLayout.error =
-            "Amount cannot be less then 1 or grater then 5"
+        } else if (amount.toFloat() <= 0 || amount.toFloat() > 20) binding.amountTextInputLayout.error =
+            "Amount cannot be less then 1 or grater then 20"
         else {
             binding.amountTextInputLayout.error = null
             binding.amountTextInputLayout.isErrorEnabled = false
