@@ -37,6 +37,7 @@ android {
     }
     buildFeatures {
         viewBinding true
+        buildConfig true
     }
 }
 
@@ -53,8 +54,8 @@ dependencies {
     // Taly SDK
     implementation files('libs/taly-sdk-release.aar')
 
-    // MixPanel library
-    implementation 'com.mixpanel.android:mixpanel-android:7.+'
+    // The Mixpanel library is only required for versions below v1.3
+    // implementation 'com.mixpanel.android:mixpanel-android:7.+'
 
     // Retrofit library
     def retrofit = '2.9.0'
@@ -65,8 +66,4 @@ dependencies {
     implementation(platform("com.squareup.okhttp3:okhttp-bom:4.10.0"))
     implementation("com.squareup.okhttp3:okhttp")
     implementation("com.squareup.okhttp3:logging-interceptor")
-
-    //Network Inspection
-    implementation 'com.facebook.stetho:stetho:1.6.0'
-    implementation 'com.facebook.stetho:stetho-okhttp3:1.6.0'
 }

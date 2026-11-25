@@ -135,7 +135,7 @@ class MainActivity : AppCompatActivity(), BannerView.OnInfoClick {
      */
     // on info clicked
     override fun onInfoClicked(url: String) {
-        Log.d(TAG, "onInfoClicked: $url")
+        if (BuildConfig.DEBUG) Log.d(TAG, "onInfoClicked")
         startActivity(
             Intent(context, CmsWebViewActivity::class.java)
                 .putExtra(CmsWebViewActivity.WEB_URL, url)
@@ -167,11 +167,11 @@ class MainActivity : AppCompatActivity(), BannerView.OnInfoClick {
             currency,
             customSDKCallback = object : CustomSDKCallback<InstallmentModel> {
                 override fun onSuccess(response: InstallmentModel) {
-                    Log.d(TAG, "BannerResponse: $response")
+                    if (BuildConfig.DEBUG) Log.d(TAG, "BannerResponse: received")
                 }
 
                 override fun onFailure(errorMessage: Any) {
-                    Log.d(TAG, "BannerResponse: $errorMessage")
+                    if (BuildConfig.DEBUG) Log.d(TAG, "BannerResponse: failed")
                 }
             })
     }
@@ -330,7 +330,8 @@ class MainActivity : AppCompatActivity(), BannerView.OnInfoClick {
     private fun initiateCallBacks() {
         talySdkController.subscribeToListener(object : PaymentCallback {
             override fun onPaymentSuccess(successCallBack: SuccessCallBack) {
-                Log.d(TAG, "onPaymentSuccess: $successCallBack")
+                // Never log the full callback object: it contains order and payment details.
+                if (BuildConfig.DEBUG) Log.d(TAG, "onPaymentSuccess: merchantOrderId=${successCallBack.merchantOrderId}")
                 clearAll()
                 val message = "OrderId : ${successCallBack.merchantOrderId}\n" +
                         "Amount : ${successCallBack.totalAmount}\n" +
@@ -339,13 +340,13 @@ class MainActivity : AppCompatActivity(), BannerView.OnInfoClick {
             }
 
             override fun onPaymentError(errorCallBack: ErrorCallBack) {
-                Log.d(TAG, "onPaymentFailure: $errorCallBack")
+                if (BuildConfig.DEBUG) Log.d(TAG, "onPaymentError: status=${errorCallBack.status}, merchantOrderId=${errorCallBack.merchantOrderId}")
                 clearAll()
                 showPopup(context, "Error", errorCallBack.message ?: "")
             }
 
             override fun onPaymentFailure(failureCallBack: SuccessCallBack) {
-                Log.d(TAG, "onPaymentFailure: $failureCallBack")
+                if (BuildConfig.DEBUG) Log.d(TAG, "onPaymentFailure: status=${failureCallBack.status}, merchantOrderId=${failureCallBack.merchantOrderId}")
                 clearAll()
                 val message = "OrderId : ${failureCallBack.merchantOrderId}\n" +
                         "Amount : ${failureCallBack.totalAmount}\n" +

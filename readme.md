@@ -2,20 +2,49 @@
 
 Taly is a Buy Now, Pay Later provider that allows you to split your payments into four interest-free installments or pay later in 30 days, making your purchases more affordable and convenient.
 
+## SDK versions
+
+This repository ships two versions of the SDK. **Use v1.3.**
+
+| Version | File | Status | Use it for |
+|---|---|---|---|
+| **v1.3** (recommended) | [`aar/v1.3`](aar/v1.3/taly-sdk-release.aar) | Current | All new integrations, and every existing integration (migrate before the cutoff date) |
+| v1.2 | [`aar/v1.2`](aar/v1.2/taly-sdk-release.aar) | Previous, no new features | Existing integrations that have not migrated to v1.3 yet |
+
+> **Important:** v1.2 signs in through a shared Taly API client. Taly will switch that shared client off on a cutoff date that will be announced to merchants. After that date **v1.2 can no longer authenticate and payments will fail**. Migrate to v1.3 before then (see [Migrating from v1.2 to v1.3](#migrating-from-v12-to-v13)).
+
+| | v1.2 | v1.3 |
+|---|---|---|
+| Minimum Android version | `minSdk 26` | `minSdk 26` |
+| Tested up to | API 33 (`targetSdk 33`) | API 36 / Android 16 (`targetSdk 36`) |
+| Sign-in | Username + password (shared API client) | **Client ID + client secret** (your own API client) + username + password |
+| Mixpanel dependency | Required | **Not required** (analytics removed) |
+
+### What's new in v1.3
+
+* **Your own API client credentials.** Initialize the SDK with the client ID and client secret generated in the Taly merchant portal (**API credentials** page, **Client credentials** section). The shared client is no longer built into the SDK.
+* **Payment result confirmed by Taly's server.** `onPaymentSuccess` is called only when the Taly server reports the order as `CONFIRMED`. If the order is not confirmed, `onPaymentFailure` is called. The checkout page URL alone can no longer mark an order as paid.
+* **Production hardening.** In `Environment.Production` the SDK writes no logs, and screenshots and screen recording of the checkout screen are blocked.
+* **Android 16 ready.** Built and tested against API 36: edge-to-edge layout, predictive back and dark status bar icons on the checkout screen.
+* **Security fixes** for sign-in and token handling (a token is only ever sent to the environment that issued it).
+
+The public API is unchanged apart from the new `initialize` method: `TalySdkController`, `InitiatePaymentModel`, `PaymentCallback`, the banner and the other `TalySdk` settings work exactly as in v1.2.
+
 ## Setup SDK
 
-Make sure your project minimum sdk level is **26**. Taly SDK supports the Android SDK level from **26** to **33**.
+Make sure your project minimum sdk level is **26**.
 
 ```
          defaultConfig {
            minSdk 26
-           targetSdk 33
+           targetSdk 36 // v1.3 is tested up to 36; use 33 or lower with v1.2
           }
 ```
 
 1. Place the taly-sdk-release.aar File in Your Project:
 
-   * Copy the .aar library file into the **libs** directory of your Android project. If the **libs** directory doesn't exist, you can create it in the **app** module of your project.
+   * Copy the .aar file of the version you use (**`aar/v1.3`** recommended, or `aar/v1.2`) into the **libs** directory of your Android project. If the **libs** directory doesn't exist, you can create it in the **app** module of your project.
+   * Keep only one version of the .aar in **libs**.
 
 2. Add Dependencies in Your Project's build.gradle:
 
@@ -34,7 +63,23 @@ Make sure your project minimum sdk level is **26**. Taly SDK supports the Androi
        ```
 
 3. Required libraries:
-   * Add library required by SDK
+   * Add the libraries required by the SDK.
+
+     **v1.3**
+       ```
+       dependencies {
+           ...
+           def retrofit = '2.9.0'
+           implementation "com.squareup.retrofit2:retrofit:$retrofit"
+           implementation "com.squareup.retrofit2:converter-gson:$retrofit"
+           implementation "com.squareup.retrofit2:converter-jackson:$retrofit"
+
+           implementation(platform("com.squareup.okhttp3:okhttp-bom:4.10.0"))
+           implementation("com.squareup.okhttp3:okhttp")
+       }
+       ```
+
+     **v1.2** (also needs Mixpanel)
        ```
        dependencies {
            ...
@@ -47,9 +92,9 @@ Make sure your project minimum sdk level is **26**. Taly SDK supports the Androi
            
            implementation(platform("com.squareup.okhttp3:okhttp-bom:4.10.0"))
            implementation("com.squareup.okhttp3:okhttp")
-           implementation("com.squareup.okhttp3:logging-interceptor")
        }
        ```
+   * Neither version needs `okhttp3:logging-interceptor` or Stetho. If your app uses an HTTP logging or network-inspection tool, enable it in debug builds only: in release builds it would expose access tokens and payment data.
 
 4. Sync Gradle:
    * After adding the dependency, sync your project with Gradle.
@@ -75,10 +120,26 @@ The example app serves as a simple online shopping application that highlights t
 
    Begin by initializing the Taly SDK with the necessary credentials. You'll need the following information:
 
+   * **Client ID** and **Client secret** (v1.3 only): your own API client, generated in the Taly merchant portal (**API credentials** page, **Client credentials** section). The secret is shown only once; if you lose it, rotate it in the portal.
    * **Username**: Your username for authentication.
    * **Password**: Your password for authentication.
    * **Environment**: Choose between Environment.Development for development and testing, or Environment.Production for the live app.
 
+   **v1.3**
+    ```
+    TalySdk.initialize(
+           context = applicationContext,
+           clientId = "YOUR_CLIENT_ID",
+           clientSecret = "YOUR_CLIENT_SECRET",
+           userName = "YOUR_USER_NAME",
+           password = "YOUR_PASSWORD",
+           environment = Environment.Development
+       )
+    // Verbose SDK logs in debug builds only; release builds log nothing.
+    TalySdk.setLogLevel(if (BuildConfig.DEBUG) LogLevel.VERBOSE else LogLevel.SUPRESS)
+    ```
+
+   **v1.2**
     ```
     TalySdk.initialize(
            applicationContext,
@@ -86,9 +147,13 @@ The example app serves as a simple online shopping application that highlights t
            "YOUR_PASSWORD",
            Environment.Development
        )
-    TalySdk.setLogLevel(LogLevel.VERBOSE) // set log level for debugging.
+    TalySdk.setLogLevel(if (BuildConfig.DEBUG) LogLevel.VERBOSE else LogLevel.SUPRESS)
     ```
    Add above initialization code in your Application class.
+
+   * `BuildConfig.DEBUG` needs `buildFeatures { buildConfig true }` in your app module's **build.gradle** (Android Gradle Plugin 8 and later).
+   * Do not log your credentials or the SDK's callback objects, and do not commit real credentials to a public repository. If the client secret leaks, rotate it in the merchant portal.
+   * In v1.3, the old `TalySdk.initialize(context, userName, password, environment)` still compiles but is deprecated: without a client ID and secret the SDK cannot sign in, and payments return `onPaymentError`.
 
 2. Add MyApplication in AndroidManifest.xml
 
@@ -226,6 +291,20 @@ talySdkController.subscribeToListener(object : PaymentCallback {
 The **TalySdkController** offers callbacks for order success, failure, and error events. To receive these callbacks, utilize the **talySdkController.subscribeToListener** and register to listen for success, failure, and error events.
 
 Note :- Implement callback before **initiatePayment**.
+
+* In v1.3, **onPaymentSuccess** is called only after the Taly server confirms the order (`CONFIRMED`). **onPaymentFailure** is called for rejected, cancelled, incomplete or unconfirmed orders. **onPaymentError** is called when the payment could not be started or verified (for example a network error or missing client credentials).
+* Always confirm the final order status on your server through the **postBackUrl** webhook before fulfilling an order.
+* Do not log the callback objects: they contain order, amount and customer details.
+
+## Migrating from v1.2 to v1.3
+
+1. In the Taly merchant portal, open **API credentials** and generate your **Client credentials**. Copy the client ID and client secret (the secret is shown only once).
+2. Replace the .aar in your **libs** directory with `aar/v1.3`.
+3. Remove `com.mixpanel.android:mixpanel-android` from your dependencies (no longer used).
+4. Change your `TalySdk.initialize(...)` call to the v1.3 version with `clientId` and `clientSecret` (see [Initialize](#initialize)).
+5. Test a full payment in `Environment.Development`, then switch to `Environment.Production`.
+
+No other code changes are needed: payment, banner and callback APIs are unchanged.
 
 ### Additional
 ---
